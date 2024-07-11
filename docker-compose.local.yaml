@@ -1,0 +1,81 @@
+services:
+  caddy:
+    image: caddy:2.8.4-alpine
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./caddy/local.Caddyfile:/etc/caddy/Caddyfile
+    networks:
+      - core
+
+  mongodb:
+    image: mongo:latest
+    restart: always
+    depends_on:
+      - caddy
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+      MONGO_INITDB_DATABASE: tasks
+    ports:
+      - 27017:27017
+    volumes:
+      - ./mongodb_data:/data/db
+    networks:
+      - core
+
+  mongo_express:
+    image: mongo-express:latest
+    restart: always
+    depends_on:
+      - mongodb
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_MONGODB_AUTH_DATABASE: admin
+      ME_CONFIG_MONGODB_AUTH_USERNAME: root
+      ME_CONFIG_MONGODB_AUTH_PASSWORD: root
+      ME_CONFIG_BASICAUTH_USERNAME: root
+      ME_CONFIG_BASICAUTH_PASSWORD: root
+    ports:
+      - 8081:8081
+    networks:
+      - core
+
+  api:
+    image: code_compete_api:latest
+    restart: always
+    depends_on:
+      - caddy
+      - mongodb
+    build:
+      context: api/
+      dockerfile: deployment/local.Dockerfile
+    volumes:
+      - ./api:/code
+    networks:
+      - core
+
+  www:
+    image: code_compete_www:latest
+    restart: always
+    depends_on:
+      - caddy
+      - mongodb
+      - api
+    build:
+      context: www/
+      dockerfile: deployment/local.Dockerfile
+    volumes:
+      - ./www:/code
+      - /code/node_modules
+    networks:
+      - core
+
+volumes:
+  mongodb_data:
+
+networks:
+  core:

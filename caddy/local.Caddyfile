@@ -1,0 +1,19 @@
+app.code-compete.local {
+    tls internal
+
+    handle /api/1.0/* {
+        reverse_proxy api:4500
+    }
+
+    handle {
+        reverse_proxy www:3000
+    }
+}
+
+mongodb.code-compete.local {
+    tls internal
+
+    handle {
+        reverse_proxy mongo_express:8081
+    }
+}
